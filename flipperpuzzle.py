@@ -1,3 +1,4 @@
+#!/usr/bin/python
 """
 A solver for a pancake flipping (or bit flipping) puzzle
 
@@ -18,6 +19,7 @@ Invocation:
 """
 
 # IMPORTS
+import doctest
 import sys
 
 # CLASSES
@@ -102,39 +104,39 @@ class Challenge():
         True
 
         """
-        for ix, pancake in enumerate(self.cstate[nth:nth+self.flipw]):
-            self.cstate[nth+ix] = not pancake
-        self.nflips += 1
+        if self.npan - nth < self.flipw:
+            # too close to the edge, cannot flip!
+            pass
+        else:
+            for ix, pancake in enumerate(self.cstate[nth:nth+self.flipw]):
+                self.cstate[nth+ix] = not pancake
+            self.nflips += 1
         self.states.append(self.cstate[:])
 
     def dumbsolver(self):
         """
         Find the left most unhappy pancake and flip that.
         Repeat until solved or if cstate is a repeat of a previous state
-        Print the findings (solution or impossible)
 
         Examples
         --------
         >>> from flipperpuzzle import *
         >>> chal = Challenge(3, '---')
         >>> chal.dumbsolver()
+        >>> chal.solution
         1
         >>> chal = Challenge(3, '--')
         >>> chal.dumbsolver()
-        IMPOSSIBLE
+        >>> chal.solution == -1
+        True
 
         """
         while self.solution is None:
-            if False in self.cstate:
+            if not self.is_solved():
                 first = self.cstate.index(False)
                 self.flip_nth(first)
                 if not self.is_solved() and self.cstate in self.states[:-1]:
                     self.solution = -1
-        if self.solution == -1:
-            print('IMPOSSIBLE')
-        else:
-            print(self.nflips)
-
 
 def signs2bool(signs):
     """
@@ -165,3 +167,64 @@ def signs2bool(signs):
             print('Ignoring invalid character found in string of signs: %s' % sign)
     return bools
 
+def parse_line(line):
+    """
+    Parse a line of text describing a challenge, string of +- followed by integer flipper
+    width
+
+    Parameters
+    ----------
+    line - str - string of +- chars, space, integer flipper width
+
+    Returns
+    -------
+    chal - Challenge Object - challenge object based on line contents
+
+    Examples
+    --------
+    >>> from flipperpuzzle import *
+    >>> chal = parse_line('+-+-+ 3')
+    >>> chal.flipw == 3
+    True
+    >>> len(chal.cstate) == 5
+    True
+    >>> chal.cstate == [True, False, True, False, True]
+    True
+
+    """
+    if not line:
+        return None
+    parts = line.strip().split()
+    pancakes = parts[0]
+    if not pancakes.count('+') + pancakes.count('-') == len(pancakes):
+        print('Invalid character in pancake initial conditions: %s' % pancakes)
+        return None
+    flipw = parts[1]
+    if not flipw.isdigit():
+        print('Invalid spatula width "%s" given' % flipw)
+    chal = Challenge(int(flipw), pancakes)
+    return chal
+
+if __name__ == "__main__":
+    numargs = len(sys.argv)
+    if numargs == 2:
+        if sys.argv[1].lower()=='test':
+            doctest.testmod()
+        else:
+            infile = sys.argv[1].strip()
+            chals = []
+            with open(infile, 'r') as fid:
+                numpuzzles = fid.readline()
+                for line in fid.readlines():
+                    chal = parse_line(line)
+                    chals.append(chal)
+            # solve and print solutions
+            ix = 0
+            for chal in chals:
+                ix += 1
+                chal.dumbsolver()
+                if chal.solution >= 0:
+                    sol = chal.nflips
+                else:
+                    sol = 'IMPOSSIBLE'
+                print('Case #%d: %s' % (ix, sol))
