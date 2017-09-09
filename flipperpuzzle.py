@@ -16,6 +16,8 @@ considered solved when all pancakes are + characters.
 Invocation:
 ./flipperpuzzle.py inputfile.txt
 
+References:
+https://code.google.com/codejam/contest/3264486/dashboard
 """
 
 # IMPORTS
